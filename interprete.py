@@ -1,11 +1,14 @@
 import sys
 import subprocess
 import os
+import re
 from typing import List
 
 
 def split_by_token(tokens, token="|") -> List[List[str]]:
     """
+    split list of tokens into list of lists of tokens, by token delimeter
+
     :param tokens: list of strings with tokens
     :param token: token-splitter
     :return: list of lists, where particular list consists of command from token to token, not inclusive
@@ -23,7 +26,7 @@ def split_by_token(tokens, token="|") -> List[List[str]]:
 
 def simple_interprete_single_command(command, stdin, stdout):
     """
-    execute command with stdin=stdin, stdout=stdout
+    execute single(without pipes) command with stdin=stdin, stdout=stdout
 
     :param stdout: output file descriptor
     :param stdin: input file descriptor
@@ -32,15 +35,33 @@ def simple_interprete_single_command(command, stdin, stdout):
     """
     if len(command) > 0 and command[0] == "exit":
         sys.exit(0)
-    return subprocess.Popen(command, bufsize=0, stdin=stdin, stdout=stdout, env=os.environ)
+    match = re.match(r"^([\w]+)=(.+)$", command[0])
+    if match:
+        os.environ[match.group(1)] = match.group(2)
+
+        class Equality:
+            def wait(self):
+                pass
+
+        return Equality()
+    else:
+        return subprocess.Popen(command, bufsize=0, stdin=stdin, stdout=stdout, env=os.environ)
 
 
-def simple_interprete_commands(tokens):
-    commands = split_by_token(tokens)
+def simple_interprete_commands(tokens, stdin=sys.stdin.fileno(), stdout=sys.stdout.fileno()):
+    """
+    interprete tokens as bash command(maybe with pipes).
+
+    :param stdout: stdout file descriptor for command
+    :param stdin: stdin file descriptor for command
+    :param tokens: list of strings
+    :return: nothing
+    """
+    commands = split_by_token(tokens, "|")
 
     # we should not read from sys.stdin until first process has executed
     # TODO improve
-    previous_stdin = sys.stdin.fileno()
+    previous_stdin = stdin
     if len(commands) == 0:
         return
 
@@ -56,14 +77,14 @@ def simple_interprete_commands(tokens):
         previous_stdin = stdin_pipe
     processes.append(
         (
-            simple_interprete_single_command(commands[-1], stdin=previous_stdin, stdout=sys.stdout.fileno()),
-            (previous_stdin, sys.stdout.fileno())
+            simple_interprete_single_command(commands[-1], stdin=previous_stdin, stdout=stdout),
+            (previous_stdin, stdout)
         )
     )
 
     for (process, (stdin_pipe, stdout_pipe)) in processes:
         process.wait()
-        if stdin_pipe != sys.stdin.fileno():
+        if stdin_pipe != stdin:
             os.close(stdin_pipe)
-        if stdout_pipe != sys.stdout.fileno():
+        if stdout_pipe != stdout:
             os.close(stdout_pipe)
