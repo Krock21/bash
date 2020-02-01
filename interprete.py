@@ -1,7 +1,7 @@
 import sys
 import subprocess
 import os
-import re
+import bash_builtins
 from typing import List
 
 
@@ -33,17 +33,9 @@ def simple_interprete_single_command(command, stdin, stdout):
     :param command: list of attributes of command
     :return: Popen object for unrecognized, object with .wait() for builtin command
     """
-    if len(command) > 0 and command[0] == "exit":
-        sys.exit(0)
-    match = re.match(r"^([\w]+)=(.+)$", command[0])
-    if match:
-        os.environ[match.group(1)] = match.group(2)
-
-        class Equality:
-            def wait(self):
-                pass
-
-        return Equality()
+    answer = bash_builtins.simple_interprete_single_builtin_command(command, stdin, stdout)
+    if answer:
+        return answer
     else:
         return subprocess.Popen(command, bufsize=0, stdin=stdin, stdout=stdout, env=os.environ)
 
@@ -61,9 +53,8 @@ def simple_interprete_commands(tokens, stdin=sys.stdin.fileno(), stdout=sys.stdo
 
     # we should not read from sys.stdin until first process has executed
     # TODO improve
-    previous_stdin = stdin
-    if len(commands) == 0:
-        return
+    previous_stdin, program_stdout = os.pipe()
+    result_stdin, last_stdout = os.pipe()
 
     processes = []
     for i in range(len(commands) - 1):
@@ -77,14 +68,24 @@ def simple_interprete_commands(tokens, stdin=sys.stdin.fileno(), stdout=sys.stdo
         previous_stdin = stdin_pipe
     processes.append(
         (
-            simple_interprete_single_command(commands[-1], stdin=previous_stdin, stdout=stdout),
-            (previous_stdin, stdout)
+            simple_interprete_single_command(commands[-1], stdin=previous_stdin, stdout=last_stdout),
+            (previous_stdin, last_stdout)
         )
     )
 
+    # TODO we could redirect our stdin to first program_stdout
+    os.close(program_stdout)
+
     for (process, (stdin_pipe, stdout_pipe)) in processes:
         process.wait()
-        if stdin_pipe != stdin:
-            os.close(stdin_pipe)
-        if stdout_pipe != stdout:
-            os.close(stdout_pipe)
+        os.close(stdin_pipe)
+        os.close(stdout_pipe)
+
+    while True:
+        obj = os.read(result_stdin, 1)
+        if obj:
+            os.write(stdout, obj)
+        else:
+            break
+
+    os.close(result_stdin)
