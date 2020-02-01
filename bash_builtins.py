@@ -4,12 +4,18 @@ import os
 import argparse
 import threading
 
+
 class BuiltinThreadWrapper:
+    """
+    wraps Thread object. Adds to it wait() method
+    """
+
     def __init__(self, thread_object):
         self.thread = thread_object
 
     def wait(self):
         self.thread.join()
+
 
 def simple_interprete_single_builtin_command(command, stdin, stdout):
     """
