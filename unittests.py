@@ -97,7 +97,9 @@ class TestInterprete(unittest.TestCase):
     def test_simple_interprete_single_command(self):
         waiter = interprete.simple_interprete_single_command([], 0, 1)
         waiter.wait()
-        with self.assertRaises(PermissionError):
+        # linux: PermissionError
+        # windows: OSError
+        with self.assertRaises(OSError):
             waiter = interprete.simple_interprete_single_command([""], 0, 1)
             waiter.wait()
         with self.assertRaises(FileNotFoundError):
