@@ -114,8 +114,11 @@ class TestInterprete(unittest.TestCase):
         with open(read_fd, "r") as fin:
             self.assertEqual(fin.read(), "hello world")
 
+        read_fd, write_fd = os.pipe()
         waiter = interprete.simple_interprete_single_command(["git", "version"], 0, write_fd)
         waiter.wait()
+        os.close(write_fd)
+        os.close(read_fd)
 
     def test_simple_interprete_commands(self):
         read_fd, write_fd = os.pipe()
