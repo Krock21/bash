@@ -20,7 +20,8 @@ class TestBuiltins(unittest.TestCase):
     # private functions, actually
     def setUp(self):
         self.TEST_STRING = "  tes t_co n\nc o\nnt en   t\n \n     \nt es\nt  "
-        self.TEST_STRING_WC = "7 11 43"  # CONNECTED TO TEST_STRING
+        self.TEST_STRING_WC = "7 11"  # CONNECTED TO TEST_STRING, first number is lines, second number is words,
+        # third number will be added automatically(because of difference in windows and linux)
         self.TEST_ARGUMENTS = ["a rg 1", "arg 2", "arg3_12das", "__dsa"]
 
     def test_cat(self):
@@ -60,11 +61,11 @@ class TestBuiltins(unittest.TestCase):
                                                                         stdin=sys.stdin.fileno(),
                                                                         stdout=write_pipe)
         thread.wait()
-        os.remove(filename)
         os.close(write_pipe)
         with open(read_pipe, "r") as fin:
             file_content = fin.read()
-            self.assertEqual(file_content, self.TEST_STRING_WC)
+            self.assertEqual(file_content, self.TEST_STRING_WC + " " + str(os.path.getsize(filename)))
+        os.remove(filename)
 
     def test_pwd(self):
         read_pipe, write_pipe = os.pipe()
@@ -85,7 +86,7 @@ class TestTokenize(unittest.TestCase):
 
 
 class TestInterprete(unittest.TestCase):
-    #private function, actually
+    # private function, actually
     def test_split_by_token(self):
         self.assertEqual(interprete.split_by_token(["a", "b", "|", "|", "c", "|", "d", "|"]),
                          [["a", "b"], [], ["c"], ["d"], []])
