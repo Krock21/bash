@@ -118,12 +118,18 @@ class TestInterprete(unittest.TestCase):
         waiter.wait()
 
     def test_simple_interprete_commands(self):
-        # TODO find common for Windows, Linux and Mac command with behavior depends on standard input
         read_fd, write_fd = os.pipe()
         interprete.simple_interprete_commands(["echo", "abc", "def", "ghi", "|", "echo", "qwe", "rty"], stdout=write_fd)
         os.close(write_fd)
         with open(read_fd, "r") as fin:
             self.assertEqual(fin.read(), "qwe rty")
+        read_fd, write_fd = os.pipe()
+        # we do not support macos
+        interprete.simple_interprete_commands(["echo", "print(str(2 + 3) + \"abc\")\n", "|", "python"],
+                                              stdout=write_fd)
+        os.close(write_fd)
+        with open(read_fd, "r") as fin:
+            self.assertEqual(fin.read(), "5abc\n")
 
 
 class TestSubstitute(unittest.TestCase):
