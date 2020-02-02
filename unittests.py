@@ -114,6 +114,17 @@ class TestInterprete(unittest.TestCase):
         with open(read_fd, "r") as fin:
             self.assertEqual(fin.read(), "hello world")
 
+        waiter = interprete.simple_interprete_single_command(["git", "version"], 0, write_fd)
+        waiter.wait()
+
+    def test_simple_interprete_commands(self):
+        # TODO find common for Windows, Linux and Mac command with behavior depends on standard input
+        read_fd, write_fd = os.pipe()
+        interprete.simple_interprete_commands(["echo", "abc", "def", "ghi", "|", "echo", "qwe", "rty"], stdout=write_fd)
+        os.close(write_fd)
+        with open(read_fd, "r") as fin:
+            self.assertEqual(fin.read(), "qwe rty")
+
 
 class TestSubstitute(unittest.TestCase):
     def test_simple_substitute(self):
