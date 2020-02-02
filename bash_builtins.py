@@ -1,8 +1,8 @@
-import sys
 import re
 import os
 import argparse
 import threading
+import signal
 
 
 class BuiltinThreadWrapper:
@@ -23,9 +23,10 @@ def cat_function(args, stdin, stdout):
     parser = argparse.ArgumentParser(prog="cat", description='print file content')
     parser.add_argument("FILE", help='path to file')
     parsed_args = parser.parse_args(args)
-    fin = open(vars(parsed_args).get("FILE"))
+    fin = open(vars(parsed_args).get("FILE"), "r")
     fout = open(stdout, "w", closefd=False)  # we should not close stdout
-    fout.write(fin.read() + "\n")
+    fout.write(fin.read())
+    fin.close()
 
 
 def echo_function(args, stdin, stdout):
@@ -33,7 +34,7 @@ def echo_function(args, stdin, stdout):
     parser.add_argument("argument", nargs='+')
     parsed_args = parser.parse_args(args)
     fout = open(stdout, "w", closefd=False)  # we should not close stdout
-    fout.write(' '.join(vars(parsed_args).get("argument")) + "\n")
+    fout.write(' '.join(vars(parsed_args).get("argument")))
 
 
 def wc_function(args, stdin, stdout):
@@ -41,23 +42,24 @@ def wc_function(args, stdin, stdout):
     parser.add_argument("FILE", help='path to file')
     parsed_args = parser.parse_args(args)
     filepath = vars(parsed_args).get("FILE")
-    fin = open(filepath)
+    fin = open(filepath, "r")
     fout = open(stdout, "w", closefd=False)  # we should not close stdout
     lines = fin.readlines()
     words_count = sum([len(line.split()) for line in lines])
     file_size = os.path.getsize(filepath)
-    fout.write(str(len(lines)) + " " + str(words_count) + " " + str(file_size) + "\n")
+    fout.write(str(len(lines)) + " " + str(words_count) + " " + str(file_size))
+    fin.close()
 
 
 def pwd_function(args, stdin, stdout):
     parser = argparse.ArgumentParser(prog="pwd", description='print current directory')
     parser.parse_args(args)
     fout = open(stdout, "w", closefd=False)  # we should not close stdout
-    fout.write(os.getcwd() + "\n")
+    fout.write(os.getcwd())
 
 
 def exit_function(args, stdin, stdout):
-    sys.exit(0);
+    os.kill(os.getpid(), signal.SIGTERM)
 
 
 command_to_function = {

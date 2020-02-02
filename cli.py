@@ -1,11 +1,17 @@
-import sys
-
 from bash_tokenize import shlex_tokenize
 from substitute import simple_substitute
 from interprete import simple_interprete_commands
+import sys
+import signal
 
 
 def run_cli():
+    # calls when process has terminated, usually by exit command
+    def sigterm_handler(signalnum, current_stack_frame):
+        print("SIGTERM")
+        sys.exit(0)
+
+    signal.signal(signal.SIGTERM, sigterm_handler)
     read_command = input
     tokenize = shlex_tokenize
     substitute = simple_substitute
@@ -18,8 +24,12 @@ def run_cli():
             interprete(substituted_tokens)
         except KeyboardInterrupt:
             raise
+        except ValueError as value_error:
+            print(str(value_error))
+        except PermissionError as permission_error:
+            print(permission_error.strerror)
         except FileNotFoundError as file_not_found_error:
-            print("Command not found: " + file_not_found_error.filename)
+            print(file_not_found_error.strerror)
 
 
 if __name__ == "__main__":
