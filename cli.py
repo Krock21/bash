@@ -8,7 +8,7 @@ import signal
 def run_cli():
     # calls when process has terminated, usually by exit command
     def sigterm_handler(signalnum, current_stack_frame):
-        print("SIGTERM")
+        print("EXITING...")
         sys.exit(0)
 
     signal.signal(signal.SIGTERM, sigterm_handler)

@@ -39,16 +39,25 @@ def echo_function(args, stdin, stdout):
 
 def wc_function(args, stdin, stdout):
     parser = argparse.ArgumentParser(prog="wc", description='print number of lines, words and bytes in FILE')
-    parser.add_argument("FILE", help='path to file')
+    parser.add_argument("FILE", nargs='?', help='path to file')
     parsed_args = parser.parse_args(args)
     filepath = vars(parsed_args).get("FILE")
-    fin = open(filepath, "r")
     fout = open(stdout, "w", closefd=False)  # we should not close stdout
-    lines = fin.readlines()
-    words_count = sum([len(line.split()) for line in lines])
-    file_size = os.path.getsize(filepath)
-    fout.write(str(len(lines)) + " " + str(words_count) + " " + str(file_size))
-    fin.close()
+    if filepath:
+        # READ FILEPATH
+        fin = open(filepath, "r")
+        lines = fin.readlines()
+        words_count = sum([len(line.split()) for line in lines])
+        file_size = os.path.getsize(filepath)
+        fout.write(str(len(lines)) + " " + str(words_count) + " " + str(file_size))
+        fin.close()
+    else:
+        # READ STDIN
+        fin = open(stdin, "r", closefd=False)
+        lines = fin.readlines()
+        words_count = sum([len(line.split()) for line in lines])
+        file_size = sum([len(line) for line in lines])
+        fout.write(str(len(lines)) + " " + str(words_count) + " " + str(file_size))
 
 
 def pwd_function(args, stdin, stdout):

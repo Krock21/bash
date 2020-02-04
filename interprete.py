@@ -53,8 +53,9 @@ def simple_interprete_commands(tokens, stdin=sys.stdin.fileno(), stdout=sys.stdo
 
     # we should not read from sys.stdin until first process has executed
     # TODO improve
-    previous_stdin, program_stdout = os.pipe()
-    result_stdin, last_stdout = os.pipe()
+    # processes should not close file descriptors
+    previous_stdin = stdin
+    last_stdout = stdout
 
     processes = []
     for i in range(len(commands) - 1):
@@ -73,19 +74,9 @@ def simple_interprete_commands(tokens, stdin=sys.stdin.fileno(), stdout=sys.stdo
         )
     )
 
-    # TODO we could redirect our stdin to first program_stdout
-    os.close(program_stdout)
-
     for (process, (stdin_pipe, stdout_pipe)) in processes:
         process.wait()
-        os.close(stdin_pipe)
-        os.close(stdout_pipe)
-
-    while True:
-        obj = os.read(result_stdin, 1)
-        if obj:
-            os.write(stdout, obj)
-        else:
-            break
-
-    os.close(result_stdin)
+        if stdin_pipe != stdin:
+            os.close(stdin_pipe)
+        if stdout_pipe != stdout:
+            os.close(stdout_pipe)
