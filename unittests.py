@@ -20,6 +20,7 @@ class TestBuiltins(unittest.TestCase):
     # private functions, actually
     def setUp(self):
         self.TEST_STRING = "  tes t_co n\nc o\nnt en   t\n \n     \nt es\nt  "
+        self.TEST_STRING_WC_INTERACTIVE = "7 11 43"
         self.TEST_STRING_WC = "7 11"  # CONNECTED TO TEST_STRING, first number is lines, second number is words,
         # third number will be added automatically(because of difference in windows and linux)
         self.TEST_ARGUMENTS = ["a rg 1", "arg 2", "arg3_12das", "__dsa"]
@@ -66,6 +67,21 @@ class TestBuiltins(unittest.TestCase):
             file_content = fin.read()
             self.assertEqual(file_content, self.TEST_STRING_WC + " " + str(os.path.getsize(filename)))
         os.remove(filename)
+
+    def test_interactive_wc(self):
+        input_pipe, wcstdin_pipe = os.pipe()
+        read_pipe, write_pipe = os.pipe()
+        thread = bash_builtins.simple_interprete_single_builtin_command(["wc"],
+                                                                        stdin=input_pipe,
+                                                                        stdout=write_pipe)
+        with open(wcstdin_pipe, "w") as fout:
+            fout.write(self.TEST_STRING)
+        thread.wait()
+        os.close(input_pipe)
+        os.close(write_pipe)
+        with open(read_pipe, "r") as fin:
+            file_content = fin.read()
+            self.assertEqual(file_content, self.TEST_STRING_WC_INTERACTIVE)
 
     def test_pwd(self):
         read_pipe, write_pipe = os.pipe()
