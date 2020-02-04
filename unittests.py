@@ -142,6 +142,7 @@ class TestInterprete(unittest.TestCase):
         os.close(write_fd)
         with open(read_fd, "r") as fin:
             self.assertEqual(fin.read(), "qwe rty")
+
         read_fd, write_fd = os.pipe()
         # we do not support macos
         interprete.simple_interprete_commands(["echo", "print(str(2 + 3) + \"abc\")\n", "|", "python"],
@@ -149,6 +150,14 @@ class TestInterprete(unittest.TestCase):
         os.close(write_fd)
         with open(read_fd, "r") as fin:
             self.assertEqual(fin.read(), "5abc\n")
+
+        read_fd, write_fd = os.pipe()
+        # we do not support macos
+        interprete.simple_interprete_commands(["echo", "123", "|", "wc"],
+                                              stdout=write_fd)
+        os.close(write_fd)
+        with open(read_fd, "r") as fin:
+            self.assertEqual(fin.read(), "1 1 3")
 
 
 class TestSubstitute(unittest.TestCase):
