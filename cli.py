@@ -6,6 +6,10 @@ import signal
 
 
 def run_cli():
+    """
+    runs CommandLine bash-like interface
+    :return: nothing
+    """
     # calls when process has terminated, usually by exit command
     def sigterm_handler(signalnum, current_stack_frame):
         print("EXITING...")

@@ -20,6 +20,13 @@ class BuiltinThreadWrapper:
 ### BUILTIN_FUNCTIONS
 
 def cat_function(args, stdin, stdout):
+    """
+    prints 1st argument file
+    :param args: arguments
+    :param stdin: input file descriptor
+    :param stdout: output file descriptor
+    :return: nothing
+    """
     parser = argparse.ArgumentParser(prog="cat", description='print file content')
     parser.add_argument("FILE", help='path to file')
     parsed_args = parser.parse_args(args)
@@ -30,6 +37,13 @@ def cat_function(args, stdin, stdout):
 
 
 def echo_function(args, stdin, stdout):
+    """
+    prints arguments separated by ' '
+    :param args: arguments
+    :param stdin: input file descriptor
+    :param stdout: output file descriptor
+    :return: nothing
+    """
     parser = argparse.ArgumentParser(prog="echo", description='print arguments')
     parser.add_argument("argument", nargs='+')
     parsed_args = parser.parse_args(args)
@@ -38,6 +52,14 @@ def echo_function(args, stdin, stdout):
 
 
 def wc_function(args, stdin, stdout):
+    """
+    prints count of lines, words and bytes in 1st argument file.
+    if file is not specified, prints count of lines, words and bytes in stdin
+    :param args: arguments
+    :param stdin: input file descriptor
+    :param stdout: output file descriptor
+    :return: nothing
+    """
     parser = argparse.ArgumentParser(prog="wc", description='print number of lines, words and bytes in FILE')
     parser.add_argument("FILE", nargs='?', help='path to file')
     parsed_args = parser.parse_args(args)
@@ -61,6 +83,13 @@ def wc_function(args, stdin, stdout):
 
 
 def pwd_function(args, stdin, stdout):
+    """
+    prints absolute path to current directory
+    :param args: arguments
+    :param stdin: input file descriptor
+    :param stdout: output file descriptor
+    :return: nothing
+    """
     parser = argparse.ArgumentParser(prog="pwd", description='print current directory')
     parser.parse_args(args)
     fout = open(stdout, "w", closefd=False)  # we should not close stdout
@@ -68,6 +97,13 @@ def pwd_function(args, stdin, stdout):
 
 
 def exit_function(args, stdin, stdout):
+    """
+    sends SIGTERM to this process.
+    :param args: arguments
+    :param stdin: input file descriptor
+    :param stdout: output file descriptor
+    :return: nothing
+    """
     os.kill(os.getpid(), signal.SIGTERM)
 
 
