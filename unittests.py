@@ -65,7 +65,7 @@ class TestBuiltins(unittest.TestCase):
         os.close(write_pipe)
         with open(read_pipe, "r") as fin:
             file_content = fin.read()
-            self.assertEqual(file_content, self.TEST_STRING_WC + " " + str(os.path.getsize(filename)))
+            self.assertEqual(file_content, self.TEST_STRING_WC + " " + str(len(self.TEST_STRING)))
         os.remove(filename)
 
     def test_interactive_wc(self):
