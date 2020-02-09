@@ -107,12 +107,59 @@ def exit_function(args, stdin, stdout):
     os.kill(os.getpid(), signal.SIGTERM)
 
 
+def grep_function(args, stdin, stdout):
+    """
+    Match lines in FILE or stdin with PATTERN
+    :param args: arguments
+    :param stdin: input file descriptor
+    :param stdout: output file descriptor
+    :return: nothing
+    """
+    parser = argparse.ArgumentParser(prog="grep", description='print lines matching a pattern')
+    parser.add_argument("-i", action='store_true',
+                        help='Ignore case distinctions, so that characters that differ only in case match each other.')
+    parser.add_argument("-w", action='store_true',
+                        help='Select  only  those  lines  containing  matches  that form whole words.')
+    parser.add_argument("-A", nargs='?', action='store', default=0,
+                        help='Print A lines after matched lines')
+    parser.add_argument("PATTERN", help='Regular expression to be matched in line')
+    parser.add_argument("FILE", nargs='?', help='Path to file to scan for')
+    parsed_args = vars(parser.parse_args(args))
+
+    pattern = parsed_args.get("PATTERN")
+    if parsed_args.get("-w"):
+        pattern = r'\b' + pattern + r'\b'
+    flags = 0
+    if parsed_args.get('-i'):
+        flags |= re.IGNORECASE
+
+    regexp = re.compile(pattern, flags)
+
+    fin = None
+    if parsed_args.get('FILE'):
+        fin = open(parsed_args.get('FILE'), 'r', closefd=True)
+    else:
+        fin = open(stdin, 'r', closefd=False)
+
+    fout = open(stdout, 'w', closefd=False)
+
+    after_parameter = int(parsed_args.get('A'))
+    remaining_after = 0
+    for line in fin:
+        if regexp.search(line):
+            remaining_after = after_parameter + 1
+        if remaining_after > 0:
+            remaining_after -= 1
+            fout.write(line)
+
+
 command_to_function = {
     "cat": cat_function,
     "echo": echo_function,
     "wc": wc_function,
     "pwd": pwd_function,
-    "exit": exit_function
+    "exit": exit_function,
+    "grep": grep_function
 }
 
 
