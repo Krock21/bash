@@ -65,20 +65,18 @@ def wc_function(args, stdin, stdout):
     parsed_args = parser.parse_args(args)
     filepath = vars(parsed_args).get("FILE")
     fout = open(stdout, "w", closefd=False)  # we should not close stdout
+    fin = None
     if filepath:
         # READ FILEPATH
         fin = open(filepath, "r")
-        lines = fin.readlines()
-        words_count = sum([len(line.split()) for line in lines])
-        file_size = os.path.getsize(filepath)
-        fout.write(str(len(lines)) + " " + str(words_count) + " " + str(file_size))
-        fin.close()
     else:
         # READ STDIN
         fin = open(stdin, "r", closefd=False)
+
+    with fin:
         lines = fin.readlines()
         words_count = sum([len(line.split()) for line in lines])
-        file_size = sum([len(line) for line in lines])
+        file_size = sum([len(line) for line in lines])  # TODO maybe replace with os.path.getsize() for files
         fout.write(str(len(lines)) + " " + str(words_count) + " " + str(file_size))
 
 
@@ -127,10 +125,10 @@ def grep_function(args, stdin, stdout):
     parsed_args = vars(parser.parse_args(args))
 
     pattern = parsed_args.get("PATTERN")
-    if parsed_args.get("-w"):
+    if parsed_args.get("w"):
         pattern = r'\b' + pattern + r'\b'
     flags = 0
-    if parsed_args.get('-i'):
+    if parsed_args.get('i'):
         flags |= re.IGNORECASE
 
     regexp = re.compile(pattern, flags)
@@ -143,14 +141,15 @@ def grep_function(args, stdin, stdout):
 
     fout = open(stdout, 'w', closefd=False)
 
-    after_parameter = int(parsed_args.get('A'))
-    remaining_after = 0
-    for line in fin:
-        if regexp.search(line):
-            remaining_after = after_parameter + 1
-        if remaining_after > 0:
-            remaining_after -= 1
-            fout.write(line)
+    with fin, fout:
+        after_parameter = int(parsed_args.get('A'))
+        remaining_after = 0
+        for line in fin:
+            if regexp.search(line):
+                remaining_after = after_parameter + 1
+            if remaining_after > 0:
+                remaining_after -= 1
+                fout.write(line)
 
 
 command_to_function = {
