@@ -152,7 +152,10 @@ class TestInterpret(unittest.TestCase):
                                             stdout=write_fd)
         os.close(write_fd)
         with open(read_fd, "r") as fin:
-            self.assertEqual(fin.read(), "1 1 4")
+            if os.name == 'nt':
+                self.assertEqual(fin.read(), "2 1 5")  # fin.read() is '123\n\n' on windows
+            else:
+                self.assertEqual(fin.read(), "1 1 4")
 
 
 class TestSubstitute(unittest.TestCase):
