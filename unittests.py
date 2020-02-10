@@ -3,16 +3,8 @@ import bash_builtins
 import sys
 import tempfile
 import os
-
-# command_to_function = {
-#     "cat": cat_function,
-#     "echo": echo_function,
-#     "wc": wc_function,
-#     "pwd": pwd_function,
-#     "exit": exit_function
-# }
 import bash_tokenize
-import interprete
+import interpret
 import substitute
 
 
@@ -29,12 +21,12 @@ class TestBuiltins(unittest.TestCase):
         file = tempfile.NamedTemporaryFile("w", delete=False)
         filename = file.name
         file.write(self.TEST_STRING)
-        read_pipe, write_pipe = os.pipe()
         file.close()
+        read_pipe, write_pipe = os.pipe()
 
-        thread = bash_builtins.simple_interprete_single_builtin_command(["cat", file.name],
-                                                                        stdin=sys.stdin.fileno(),
-                                                                        stdout=write_pipe)
+        thread = bash_builtins.simple_interpret_single_builtin_command(["cat", file.name],
+                                                                       stdin=sys.stdin.fileno(),
+                                                                       stdout=write_pipe)
         thread.wait()
         os.remove(filename)
         os.close(write_pipe)
@@ -43,13 +35,13 @@ class TestBuiltins(unittest.TestCase):
 
     def test_echo(self):
         read_pipe, write_pipe = os.pipe()
-        thread = bash_builtins.simple_interprete_single_builtin_command(["echo", *self.TEST_ARGUMENTS],
-                                                                        stdin=sys.stdin.fileno(),
-                                                                        stdout=write_pipe)
+        thread = bash_builtins.simple_interpret_single_builtin_command(["echo", *self.TEST_ARGUMENTS],
+                                                                       stdin=sys.stdin.fileno(),
+                                                                       stdout=write_pipe)
         thread.wait()
         os.close(write_pipe)
         with open(read_pipe, "r") as fin:
-            self.assertEqual(fin.read(), ' '.join(self.TEST_ARGUMENTS))
+            self.assertEqual(fin.read(), ' '.join(self.TEST_ARGUMENTS) + os.linesep)
 
     def test_wc(self):
         file = tempfile.NamedTemporaryFile("w", delete=False)
@@ -58,22 +50,22 @@ class TestBuiltins(unittest.TestCase):
         read_pipe, write_pipe = os.pipe()
         file.close()
 
-        thread = bash_builtins.simple_interprete_single_builtin_command(["wc", file.name],
-                                                                        stdin=sys.stdin.fileno(),
-                                                                        stdout=write_pipe)
+        thread = bash_builtins.simple_interpret_single_builtin_command(["wc", file.name],
+                                                                       stdin=sys.stdin.fileno(),
+                                                                       stdout=write_pipe)
         thread.wait()
         os.close(write_pipe)
         with open(read_pipe, "r") as fin:
             file_content = fin.read()
-            self.assertEqual(file_content, self.TEST_STRING_WC + " " + str(os.path.getsize(filename)))
+            self.assertEqual(file_content, self.TEST_STRING_WC + " " + str(len(self.TEST_STRING)))
         os.remove(filename)
 
     def test_interactive_wc(self):
         input_pipe, wcstdin_pipe = os.pipe()
         read_pipe, write_pipe = os.pipe()
-        thread = bash_builtins.simple_interprete_single_builtin_command(["wc"],
-                                                                        stdin=input_pipe,
-                                                                        stdout=write_pipe)
+        thread = bash_builtins.simple_interpret_single_builtin_command(["wc"],
+                                                                       stdin=input_pipe,
+                                                                       stdout=write_pipe)
         with open(wcstdin_pipe, "w") as fout:
             fout.write(self.TEST_STRING)
         thread.wait()
@@ -85,9 +77,9 @@ class TestBuiltins(unittest.TestCase):
 
     def test_pwd(self):
         read_pipe, write_pipe = os.pipe()
-        thread = bash_builtins.simple_interprete_single_builtin_command(["pwd"],
-                                                                        stdin=sys.stdin.fileno(),
-                                                                        stdout=write_pipe)
+        thread = bash_builtins.simple_interpret_single_builtin_command(["pwd"],
+                                                                       stdin=sys.stdin.fileno(),
+                                                                       stdout=write_pipe)
         thread.wait()
         os.close(write_pipe)
         with open(read_pipe, "r") as fin:
@@ -101,63 +93,63 @@ class TestTokenize(unittest.TestCase):
                          ['a', '&&', 'b;', 'c', '&&', 'd', '||', 'e;', 'f', '>abc;', '(def', 'ghi)'])
 
 
-class TestInterprete(unittest.TestCase):
+class TestInterpret(unittest.TestCase):
     # private function, actually
     def test_split_by_token(self):
-        self.assertEqual(interprete.split_by_token(["a", "b", "|", "|", "c", "|", "d", "|"]),
+        self.assertEqual(interpret.split_by_token(["a", "b", "|", "|", "c", "|", "d", "|"]),
                          [["a", "b"], [], ["c"], ["d"], []])
-        self.assertEqual(interprete.split_by_token(["|", "b", "c", "d", "e", "|", "d", "e"]),
+        self.assertEqual(interpret.split_by_token(["|", "b", "c", "d", "e", "|", "d", "e"]),
                          [[], ["b", "c", "d", "e"], ["d", "e"]])
 
     # private function, actually
-    def test_simple_interprete_single_command(self):
-        waiter = interprete.simple_interprete_single_command([], 0, 1)
+    def test_simple_interpret_single_command(self):
+        waiter = interpret.simple_interpret_single_command([], 0, 1)
         waiter.wait()
         # linux: PermissionError
         # windows: OSError
         with self.assertRaises(OSError):
-            waiter = interprete.simple_interprete_single_command([""], 0, 1)
+            waiter = interpret.simple_interpret_single_command([""], 0, 1)
             waiter.wait()
         with self.assertRaises(FileNotFoundError):
-            waiter = interprete.simple_interprete_single_command(
+            waiter = interpret.simple_interpret_single_command(
                 ["random_unrecognized_unused_program_with_unique_name"],
                 0, 1)
             waiter.wait()
         read_fd, write_fd = os.pipe()
-        waiter = interprete.simple_interprete_single_command(["echo", "hello", "world"], 0, write_fd)
+        waiter = interpret.simple_interpret_single_command(["echo", "hello", "world"], 0, write_fd)
         waiter.wait()
         os.close(write_fd)
         with open(read_fd, "r") as fin:
-            self.assertEqual(fin.read(), "hello world")
+            self.assertEqual(fin.read(), "hello world" + os.linesep)
 
         read_fd, write_fd = os.pipe()
-        waiter = interprete.simple_interprete_single_command(["git", "version"], 0, write_fd)
+        waiter = interpret.simple_interpret_single_command(["git", "version"], 0, write_fd)
         waiter.wait()
         os.close(write_fd)
         os.close(read_fd)
 
-    def test_simple_interprete_commands(self):
+    def test_simple_interpret_commands(self):
         read_fd, write_fd = os.pipe()
-        interprete.simple_interprete_commands(["echo", "abc", "def", "ghi", "|", "echo", "qwe", "rty"], stdout=write_fd)
+        interpret.simple_interpret_commands(["echo", "abc", "def", "ghi", "|", "echo", "qwe", "rty"], stdout=write_fd)
         os.close(write_fd)
         with open(read_fd, "r") as fin:
-            self.assertEqual(fin.read(), "qwe rty")
+            self.assertEqual(fin.read(), "qwe rty" + os.linesep)
 
         read_fd, write_fd = os.pipe()
         # we do not support macos
-        interprete.simple_interprete_commands(["echo", "print(str(2 + 3) + \"abc\")\n", "|", "python"],
-                                              stdout=write_fd)
+        interpret.simple_interpret_commands(["echo", "print(str(2 + 3) + \"abc\")\n", "|", "python"],
+                                            stdout=write_fd)
         os.close(write_fd)
         with open(read_fd, "r") as fin:
             self.assertEqual(fin.read(), "5abc\n")
 
         read_fd, write_fd = os.pipe()
         # we do not support macos
-        interprete.simple_interprete_commands(["echo", "123", "|", "wc"],
-                                              stdout=write_fd)
+        interpret.simple_interpret_commands(["echo", "123", "|", "wc"],
+                                            stdout=write_fd)
         os.close(write_fd)
         with open(read_fd, "r") as fin:
-            self.assertEqual(fin.read(), "1 1 3")
+            self.assertEqual(fin.read(), "1 1 4")
 
 
 class TestSubstitute(unittest.TestCase):

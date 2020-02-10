@@ -28,12 +28,15 @@ def cat_function(args, stdin, stdout):
     :return: nothing
     """
     parser = argparse.ArgumentParser(prog="cat", description='print file content')
-    parser.add_argument("FILE", help='path to file')
-    parsed_args = parser.parse_args(args)
-    fin = open(vars(parsed_args).get("FILE"), "r")
-    fout = open(stdout, "w", closefd=False)  # we should not close stdout
-    fout.write(fin.read())
-    fin.close()
+    parser.add_argument("FILE", nargs='?', help='path to file')
+    parsed_args = vars(parser.parse_args(args))
+    fin = None
+    if parsed_args.get("FILE"):
+        fin = open(parsed_args.get("FILE"), "r")
+    else:
+        fin = open(stdin, "r", closefd=False)
+    with fin, open(stdout, "w", closefd=False) as fout:  # we should not close stdout
+        fout.write(fin.read())
 
 
 def echo_function(args, stdin, stdout):
@@ -48,7 +51,7 @@ def echo_function(args, stdin, stdout):
     parser.add_argument("argument", nargs='+')
     parsed_args = parser.parse_args(args)
     fout = open(stdout, "w", closefd=False)  # we should not close stdout
-    fout.write(' '.join(vars(parsed_args).get("argument")))
+    fout.write(' '.join(vars(parsed_args).get("argument")) + os.linesep)
 
 
 def wc_function(args, stdin, stdout):
@@ -116,7 +119,7 @@ command_to_function = {
 }
 
 
-def simple_interprete_single_builtin_command(command, stdin, stdout):
+def simple_interpret_single_builtin_command(command, stdin, stdout):
     """
     execute single(without pipes) builtin command with stdin=stdin, stdout=stdout
 

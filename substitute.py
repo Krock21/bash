@@ -35,12 +35,15 @@ def simple_substitute(s):
     match_positions = []
     current_index = 0
     is_in_single_quotes = False
+    is_in_double_quotes = False
     for match in matches:
         start = match.start(2)
         end = match.end(2)
         while current_index < start:
-            if s[current_index] == "'":
+            if not is_in_double_quotes and s[current_index] == "'":
                 is_in_single_quotes = not is_in_single_quotes
+            elif not is_in_single_quotes and s[current_index] == '"':
+                is_in_double_quotes = not is_in_double_quotes
             current_index += 1
         if not is_in_single_quotes:
             match_positions.append((start, end))
