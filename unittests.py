@@ -41,7 +41,8 @@ class TestBuiltins(unittest.TestCase):
         thread.wait()
         os.close(write_pipe)
         with open(read_pipe, "r") as fin:
-            self.assertEqual(fin.read(), ' '.join(self.TEST_ARGUMENTS) + os.linesep)
+            self.assertEqual(fin.read(), ' '.join(self.TEST_ARGUMENTS) +
+                             os.linesep.replace('\r', '\n'))  # on windows echo write replaces \r to \n
 
     def test_wc(self):
         file = tempfile.NamedTemporaryFile("w", delete=False)
@@ -120,7 +121,8 @@ class TestInterpret(unittest.TestCase):
         waiter.wait()
         os.close(write_fd)
         with open(read_fd, "r") as fin:
-            self.assertEqual(fin.read(), "hello world" + os.linesep)
+            self.assertEqual(fin.read(),
+                             "hello world" + os.linesep.replace('\r', '\n'))  # on windows echo write replaces \r to \n
 
         read_fd, write_fd = os.pipe()
         waiter = interpret.simple_interpret_single_command(["git", "version"], 0, write_fd)
@@ -133,7 +135,8 @@ class TestInterpret(unittest.TestCase):
         interpret.simple_interpret_commands(["echo", "abc", "def", "ghi", "|", "echo", "qwe", "rty"], stdout=write_fd)
         os.close(write_fd)
         with open(read_fd, "r") as fin:
-            self.assertEqual(fin.read(), "qwe rty" + os.linesep)
+            self.assertEqual(fin.read(),
+                             "qwe rty" + os.linesep.replace('\r', '\n'))  # on windows echo write replaces \r to \n
 
         read_fd, write_fd = os.pipe()
         # we do not support macos

@@ -68,20 +68,17 @@ def wc_function(args, stdin, stdout):
     parsed_args = parser.parse_args(args)
     filepath = vars(parsed_args).get("FILE")
     fout = open(stdout, "w", closefd=False)  # we should not close stdout
+    fin = None
     if filepath:
         # READ FILEPATH
         fin = open(filepath, "r")
-        lines = fin.readlines()
-        words_count = sum([len(line.split()) for line in lines])
-        file_size = os.path.getsize(filepath)
-        fout.write(str(len(lines)) + " " + str(words_count) + " " + str(file_size))
-        fin.close()
     else:
         # READ STDIN
         fin = open(stdin, "r", closefd=False)
+    with fin:
         lines = fin.readlines()
         words_count = sum([len(line.split()) for line in lines])
-        file_size = sum([len(line) for line in lines])
+        file_size = sum([len(line) for line in lines])  # TODO maybe replace with os.path.getsize() for files
         fout.write(str(len(lines)) + " " + str(words_count) + " " + str(file_size))
 
 
