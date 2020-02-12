@@ -3,6 +3,7 @@ from substitute import simple_substitute
 from interpret import simple_interpret_commands
 import sys
 import signal
+import globals
 
 
 def run_cli():
@@ -20,7 +21,7 @@ def run_cli():
     tokenize = shlex_tokenize
     substitute = simple_substitute
     interpret = simple_interpret_commands
-    while True:
+    while not globals.get_should_exit():
         try:
             command = read_command()
             substituted_command = substitute(command)

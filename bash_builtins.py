@@ -3,6 +3,7 @@ import os
 import argparse
 import threading
 import signal
+import globals
 
 
 class BuiltinThreadWrapper:
@@ -104,7 +105,7 @@ def exit_function(args, stdin, stdout):
     :param stdout: output file descriptor
     :return: nothing
     """
-    os.kill(os.getpid(), signal.SIGTERM)
+    globals.set_should_exit(True)
 
 
 command_to_function = {
