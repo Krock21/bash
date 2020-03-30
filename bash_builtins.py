@@ -2,7 +2,6 @@ import re
 import os
 import argparse
 import threading
-import signal
 import globals
 
 
@@ -128,15 +127,6 @@ def grep_function(args, stdin, stdout):
     parser.add_argument("FILE", nargs='?', help='Path to file to scan for')
     parsed_args = vars(parser.parse_args(args))
 
-    pattern = parsed_args.get("PATTERN")
-    if parsed_args.get("w"):
-        pattern = r'\b' + pattern + r'\b'
-    flags = 0
-    if parsed_args.get('i'):
-        flags |= re.IGNORECASE
-
-    regexp = re.compile(pattern, flags)
-
     fin = None
     if parsed_args.get('FILE'):
         fin = open(parsed_args.get('FILE'), 'r', closefd=True)
@@ -146,14 +136,28 @@ def grep_function(args, stdin, stdout):
     fout = open(stdout, 'w', closefd=False)
 
     with fin, fout:
+
         after_parameter = int(parsed_args.get('A'))
-        remaining_after = 0
-        for line in fin:
-            if regexp.search(line):
-                remaining_after = after_parameter + 1
-            if remaining_after > 0:
-                remaining_after -= 1
-                fout.write(line)
+
+        if after_parameter < 0:
+            fout.write("grep error: -A parameter shouldn't be negative")
+        else:
+            pattern = parsed_args.get("PATTERN")
+            if parsed_args.get("w"):
+                pattern = r'\b' + pattern + r'\b'
+            flags = 0
+            if parsed_args.get('i'):
+                flags |= re.IGNORECASE
+
+            regexp = re.compile(pattern, flags)
+
+            remaining_after = 0
+            for line in fin:
+                if regexp.search(line):
+                    remaining_after = after_parameter + 1
+                if remaining_after > 0:
+                    remaining_after -= 1
+                    fout.write(line)
 
 
 command_to_function = {

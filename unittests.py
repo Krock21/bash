@@ -89,9 +89,9 @@ class TestBuiltins(unittest.TestCase):
     def test_grep(self):
         read_stdin_pipe, write_stdin_pipe = os.pipe()
         read_pipe, write_pipe = os.pipe()
-        thread = bash_builtins.simple_interprete_single_builtin_command(["grep", "abc"],
-                                                                        stdin=read_stdin_pipe,
-                                                                        stdout=write_pipe)
+        thread = bash_builtins.simple_interpret_single_builtin_command(["grep", "abc"],
+                                                                       stdin=read_stdin_pipe,
+                                                                       stdout=write_pipe)
         with open(write_stdin_pipe, "w") as finout:
             finout.writelines(
                 ["a\n", "ab\n", "abc\n", "abcd\n", "dcba\n", "aab\n", "aabcd\n", "aabc\n", "abacbca\n", "abc"])
@@ -107,9 +107,9 @@ class TestBuiltins(unittest.TestCase):
         file.writelines(["a\n", "ab\n", "abc\n", "abcd\n", "dcba\n", "aab\n", "aabcd\n", "aabc\n", "abacbca\n", "abc"])
         file.close()
         read_pipe, write_pipe = os.pipe()
-        thread = bash_builtins.simple_interprete_single_builtin_command(["grep", "abc", filename],
-                                                                        stdin=sys.stdin.fileno(),
-                                                                        stdout=write_pipe)
+        thread = bash_builtins.simple_interpret_single_builtin_command(["grep", "abc", filename],
+                                                                       stdin=sys.stdin.fileno(),
+                                                                       stdout=write_pipe)
         thread.wait()
         os.close(write_pipe)
         with open(read_pipe, "r") as fin:
@@ -119,9 +119,9 @@ class TestBuiltins(unittest.TestCase):
     def test_grep_i(self):
         read_stdin_pipe, write_stdin_pipe = os.pipe()
         read_pipe, write_pipe = os.pipe()
-        thread = bash_builtins.simple_interprete_single_builtin_command(["grep", "-i", "aBc"],
-                                                                        stdin=read_stdin_pipe,
-                                                                        stdout=write_pipe)
+        thread = bash_builtins.simple_interpret_single_builtin_command(["grep", "-i", "aBc"],
+                                                                       stdin=read_stdin_pipe,
+                                                                       stdout=write_pipe)
         with open(write_stdin_pipe, "w") as finout:
             finout.writelines(
                 ["a\n", "ab\n", "abc\n", "ABcd\n", "dCbA\n", "aaB\n", "aabCd\n", "aABC\n", "aBacBcA\n", "AbC"])
@@ -134,9 +134,9 @@ class TestBuiltins(unittest.TestCase):
     def test_grep_w(self):
         read_stdin_pipe, write_stdin_pipe = os.pipe()
         read_pipe, write_pipe = os.pipe()
-        thread = bash_builtins.simple_interprete_single_builtin_command(["grep", "-w", "abc def ghi"],
-                                                                        stdin=read_stdin_pipe,
-                                                                        stdout=write_pipe)
+        thread = bash_builtins.simple_interpret_single_builtin_command(["grep", "-w", "abc def ghi"],
+                                                                       stdin=read_stdin_pipe,
+                                                                       stdout=write_pipe)
         with open(write_stdin_pipe, "w") as finout:
             finout.writelines(
                 ["a\n", "abc def ghi\n", "abc def ghij\n", "abc abc def ghi ghi\n", "aabc def ghi\n",
@@ -150,9 +150,9 @@ class TestBuiltins(unittest.TestCase):
     def test_grep_A1(self):
         read_stdin_pipe, write_stdin_pipe = os.pipe()
         read_pipe, write_pipe = os.pipe()
-        thread = bash_builtins.simple_interprete_single_builtin_command(["grep", "-A", "1", "abc"],
-                                                                        stdin=read_stdin_pipe,
-                                                                        stdout=write_pipe)
+        thread = bash_builtins.simple_interpret_single_builtin_command(["grep", "-A", "1", "abc"],
+                                                                       stdin=read_stdin_pipe,
+                                                                       stdout=write_pipe)
         with open(write_stdin_pipe, "w") as finout:
             finout.writelines(
                 ["a\n", "ab\n", "abc\n", "abcd\n", "dcba\n", "aab\n", "aabcd\n", "aabc\n", "abacbca\n", "abc"])
@@ -166,9 +166,9 @@ class TestBuiltins(unittest.TestCase):
     def test_grep_A2(self):
         read_stdin_pipe, write_stdin_pipe = os.pipe()
         read_pipe, write_pipe = os.pipe()
-        thread = bash_builtins.simple_interprete_single_builtin_command(["grep", "-A", "2", "abc"],
-                                                                        stdin=read_stdin_pipe,
-                                                                        stdout=write_pipe)
+        thread = bash_builtins.simple_interpret_single_builtin_command(["grep", "-A", "2", "abc"],
+                                                                       stdin=read_stdin_pipe,
+                                                                       stdout=write_pipe)
         with open(write_stdin_pipe, "w") as finout:
             finout.writelines(
                 ["a\n", "ab\n", "abc\n", "abcd\n", "dcba\n", "aab\n", "aabcd\n", "aabc\n", "abacbca\n", "abc"])
@@ -178,6 +178,19 @@ class TestBuiltins(unittest.TestCase):
         with open(read_pipe, "r") as fin:
             self.assertListEqual(fin.readlines(),
                                  ['abc\n', 'abcd\n', 'dcba\n', 'aab\n', 'aabcd\n', 'aabc\n', 'abacbca\n', 'abc'])
+
+    def test_grep_incorrect_parameters(self):
+        read_stdin_pipe, write_stdin_pipe = os.pipe()
+        read_pipe, write_pipe = os.pipe()
+        thread = bash_builtins.simple_interpret_single_builtin_command(
+            ["grep", "-A", "-1", "param", "bash_builtins.py"],
+            stdin=read_stdin_pipe,
+            stdout=write_pipe)
+        thread.wait()
+        os.close(read_stdin_pipe)
+        os.close(write_pipe)
+        with open(read_pipe, "r") as fin:
+            self.assertListEqual(fin.readlines(), ["grep error: -A parameter shouldn't be negative"])
 
 
 class TestTokenize(unittest.TestCase):
