@@ -24,7 +24,7 @@ def split_by_token(tokens, token="|") -> List[List[str]]:
     return res
 
 
-def simple_interprete_single_command(command, stdin, stdout):
+def simple_interpret_single_command(command, stdin, stdout):
     """
     execute single(without pipes) command with stdin=stdin, stdout=stdout
 
@@ -33,16 +33,16 @@ def simple_interprete_single_command(command, stdin, stdout):
     :param command: list of attributes of command
     :return: Popen object for unrecognized, object with .wait() for builtin command
     """
-    answer = bash_builtins.simple_interprete_single_builtin_command(command, stdin, stdout)
+    answer = bash_builtins.simple_interpret_single_builtin_command(command, stdin, stdout)
     if answer:
         return answer
     else:
         return subprocess.Popen(command, bufsize=0, stdin=stdin, stdout=stdout, env=os.environ)
 
 
-def simple_interprete_commands(tokens, stdin=sys.stdin.fileno(), stdout=sys.stdout.fileno()):
+def simple_interpret_commands(tokens, stdin=sys.stdin.fileno(), stdout=sys.stdout.fileno()):
     """
-    interprete tokens as bash command(maybe with pipes).
+    interpret tokens as bash command(maybe with pipes).
 
     :param stdout: stdout file descriptor for command
     :param stdin: stdin file descriptor for command
@@ -50,6 +50,8 @@ def simple_interprete_commands(tokens, stdin=sys.stdin.fileno(), stdout=sys.stdo
     :return: nothing
     """
     commands = split_by_token(tokens, "|")
+    if len(commands) > 1 and any(element == [] for element in commands):
+        raise SyntaxError("Empty command with pipes is restricted")
 
     # we should not read from sys.stdin until first process has executed
     # TODO improve
@@ -62,14 +64,14 @@ def simple_interprete_commands(tokens, stdin=sys.stdin.fileno(), stdout=sys.stdo
         stdin_pipe, stdout_pipe = os.pipe()
         processes.append(
             (
-                simple_interprete_single_command(commands[i], stdin=previous_stdin, stdout=stdout_pipe),
+                simple_interpret_single_command(commands[i], stdin=previous_stdin, stdout=stdout_pipe),
                 (previous_stdin, stdout_pipe)
             )
         )
         previous_stdin = stdin_pipe
     processes.append(
         (
-            simple_interprete_single_command(commands[-1], stdin=previous_stdin, stdout=last_stdout),
+            simple_interpret_single_command(commands[-1], stdin=previous_stdin, stdout=last_stdout),
             (previous_stdin, last_stdout)
         )
     )
