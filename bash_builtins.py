@@ -1,5 +1,6 @@
 import re
 import os
+import sys
 import argparse
 import threading
 import globals
@@ -121,7 +122,7 @@ def grep_function(args, stdin, stdout):
                         help='Ignore case distinctions, so that characters that differ only in case match each other.')
     parser.add_argument("-w", action='store_true',
                         help='Select  only  those  lines  containing  matches  that form whole words.')
-    parser.add_argument("-A", nargs='?', action='store', default=0,
+    parser.add_argument("-A", nargs='?', action='store', default=0, type=int,
                         help='Print A lines after matched lines')
     parser.add_argument("PATTERN", help='Regular expression to be matched in line')
     parser.add_argument("FILE", nargs='?', help='Path to file to scan for')
@@ -129,7 +130,11 @@ def grep_function(args, stdin, stdout):
 
     fin = None
     if parsed_args.get('FILE'):
-        fin = open(parsed_args.get('FILE'), 'r', closefd=True)
+        try:
+            fin = open(parsed_args.get('FILE'), 'r', closefd=True)
+        except FileNotFoundError:
+            print("File is not accessible", file=sys.stderr)
+            return
     else:
         fin = open(stdin, 'r', closefd=False)
 
