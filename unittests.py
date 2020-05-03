@@ -48,8 +48,8 @@ class TestBuiltins(unittest.TestCase):
         file = tempfile.NamedTemporaryFile("w", delete=False)
         filename = file.name
         file.write(self.TEST_STRING)
-        read_pipe, write_pipe = os.pipe()
         file.close()
+        read_pipe, write_pipe = os.pipe()
 
         thread = bash_builtins.simple_interpret_single_builtin_command(["wc", file.name],
                                                                        stdin=sys.stdin.fileno(),
@@ -85,6 +85,112 @@ class TestBuiltins(unittest.TestCase):
         os.close(write_pipe)
         with open(read_pipe, "r") as fin:
             self.assertEqual(fin.read(), os.getcwd())
+
+    def test_grep(self):
+        read_stdin_pipe, write_stdin_pipe = os.pipe()
+        read_pipe, write_pipe = os.pipe()
+        thread = bash_builtins.simple_interpret_single_builtin_command(["grep", "abc"],
+                                                                       stdin=read_stdin_pipe,
+                                                                       stdout=write_pipe)
+        with open(write_stdin_pipe, "w") as finout:
+            finout.writelines(
+                ["a\n", "ab\n", "abc\n", "abcd\n", "dcba\n", "aab\n", "aabcd\n", "aabc\n", "abacbca\n", "abc"])
+        thread.wait()
+        os.close(read_stdin_pipe)
+        os.close(write_pipe)
+        with open(read_pipe, "r") as fin:
+            self.assertListEqual(fin.readlines(), ['abc\n', 'abcd\n', 'aabcd\n', 'aabc\n', 'abc'])
+
+    def test_grep_with_file(self):
+        file = tempfile.NamedTemporaryFile("w", delete=False)
+        filename = file.name
+        file.writelines(["a\n", "ab\n", "abc\n", "abcd\n", "dcba\n", "aab\n", "aabcd\n", "aabc\n", "abacbca\n", "abc"])
+        file.close()
+        read_pipe, write_pipe = os.pipe()
+        thread = bash_builtins.simple_interpret_single_builtin_command(["grep", "abc", filename],
+                                                                       stdin=sys.stdin.fileno(),
+                                                                       stdout=write_pipe)
+        thread.wait()
+        os.close(write_pipe)
+        with open(read_pipe, "r") as fin:
+            self.assertListEqual(fin.readlines(), ['abc\n', 'abcd\n', 'aabcd\n', 'aabc\n', 'abc'])
+        os.remove(filename)
+
+    def test_grep_i(self):
+        read_stdin_pipe, write_stdin_pipe = os.pipe()
+        read_pipe, write_pipe = os.pipe()
+        thread = bash_builtins.simple_interpret_single_builtin_command(["grep", "-i", "aBc"],
+                                                                       stdin=read_stdin_pipe,
+                                                                       stdout=write_pipe)
+        with open(write_stdin_pipe, "w") as finout:
+            finout.writelines(
+                ["a\n", "ab\n", "abc\n", "ABcd\n", "dCbA\n", "aaB\n", "aabCd\n", "aABC\n", "aBacBcA\n", "AbC"])
+        thread.wait()
+        os.close(read_stdin_pipe)
+        os.close(write_pipe)
+        with open(read_pipe, "r") as fin:
+            self.assertListEqual(fin.readlines(), ['abc\n', 'ABcd\n', 'aabCd\n', 'aABC\n', 'AbC'])
+
+    def test_grep_w(self):
+        read_stdin_pipe, write_stdin_pipe = os.pipe()
+        read_pipe, write_pipe = os.pipe()
+        thread = bash_builtins.simple_interpret_single_builtin_command(["grep", "-w", "abc def ghi"],
+                                                                       stdin=read_stdin_pipe,
+                                                                       stdout=write_pipe)
+        with open(write_stdin_pipe, "w") as finout:
+            finout.writelines(
+                ["a\n", "abc def ghi\n", "abc def ghij\n", "abc abc def ghi ghi\n", "aabc def ghi\n",
+                 " abc def ghi \n"])
+        thread.wait()
+        os.close(read_stdin_pipe)
+        os.close(write_pipe)
+        with open(read_pipe, "r") as fin:
+            self.assertListEqual(fin.readlines(), ['abc def ghi\n', 'abc abc def ghi ghi\n', ' abc def ghi \n'])
+
+    def test_grep_A1(self):
+        read_stdin_pipe, write_stdin_pipe = os.pipe()
+        read_pipe, write_pipe = os.pipe()
+        thread = bash_builtins.simple_interpret_single_builtin_command(["grep", "-A", "1", "abc"],
+                                                                       stdin=read_stdin_pipe,
+                                                                       stdout=write_pipe)
+        with open(write_stdin_pipe, "w") as finout:
+            finout.writelines(
+                ["a\n", "ab\n", "abc\n", "abcd\n", "dcba\n", "aab\n", "aabcd\n", "aabc\n", "abacbca\n", "abc"])
+        thread.wait()
+        os.close(read_stdin_pipe)
+        os.close(write_pipe)
+        with open(read_pipe, "r") as fin:
+            self.assertListEqual(fin.readlines(),
+                                 ['abc\n', 'abcd\n', 'dcba\n', 'aabcd\n', 'aabc\n', 'abacbca\n', 'abc'])
+
+    def test_grep_A2(self):
+        read_stdin_pipe, write_stdin_pipe = os.pipe()
+        read_pipe, write_pipe = os.pipe()
+        thread = bash_builtins.simple_interpret_single_builtin_command(["grep", "-A", "2", "abc"],
+                                                                       stdin=read_stdin_pipe,
+                                                                       stdout=write_pipe)
+        with open(write_stdin_pipe, "w") as finout:
+            finout.writelines(
+                ["a\n", "ab\n", "abc\n", "abcd\n", "dcba\n", "aab\n", "aabcd\n", "aabc\n", "abacbca\n", "abc"])
+        thread.wait()
+        os.close(read_stdin_pipe)
+        os.close(write_pipe)
+        with open(read_pipe, "r") as fin:
+            self.assertListEqual(fin.readlines(),
+                                 ['abc\n', 'abcd\n', 'dcba\n', 'aab\n', 'aabcd\n', 'aabc\n', 'abacbca\n', 'abc'])
+
+    def test_grep_incorrect_parameters(self):
+        read_stdin_pipe, write_stdin_pipe = os.pipe()
+        read_pipe, write_pipe = os.pipe()
+        thread = bash_builtins.simple_interpret_single_builtin_command(
+            ["grep", "-A", "-1", "param", "bash_builtins.py"],
+            stdin=read_stdin_pipe,
+            stdout=write_pipe)
+        thread.wait()
+        os.close(read_stdin_pipe)
+        os.close(write_pipe)
+        with open(read_pipe, "r") as fin:
+            self.assertListEqual(fin.readlines(), ["grep error: -A parameter shouldn't be negative"])
 
 
 class TestTokenize(unittest.TestCase):
